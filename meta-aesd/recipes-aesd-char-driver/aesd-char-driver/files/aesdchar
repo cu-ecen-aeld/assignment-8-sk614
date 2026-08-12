@@ -1,0 +1,39 @@
+#!/bin/sh
+
+case "$1" in
+    start)
+        echo "Loading aesdchar driver"
+
+        modprobe aesdchar 2>/dev/null || \
+            insmod /lib/modules/$(uname -r)/extra/aesdchar.ko
+
+        major=$(awk '$2 == "aesdchar" { print $1 }' /proc/devices)
+
+        if [ -n "$major" ] && [ ! -e /dev/aesdchar ]; then
+            mknod /dev/aesdchar c "$major" 0
+        fi
+
+        if [ -e /dev/aesdchar ]; then
+            chmod 666 /dev/aesdchar
+        fi
+        ;;
+
+    stop)
+        echo "Unloading aesdchar driver"
+
+        rm -f /dev/aesdchar
+        rmmod aesdchar 2>/dev/null || true
+        ;;
+
+    restart)
+        "$0" stop
+        "$0" start
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0
